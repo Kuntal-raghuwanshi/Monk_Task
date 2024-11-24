@@ -13,9 +13,7 @@ namespace Monk_Task.Repositories
         Task<IEnumerable<Coupons>> GetAllCoupons();
         Task<Coupons> GetCouponById(int id);
         Task<IEnumerable<ApplicableCoupons>> ApplicableCoupons(List<Items> cartItems);
-        Task<Cart> ApplyCoupon(int couponId, List<Items> cartItems);
         Task<bool> DeleteCoupon(int id);
-        //Task<ResponseModel> UpdateCoupon(Coupons detail);
     }
     public class DiscountRepository : IDiscountRepository
     {
@@ -25,37 +23,7 @@ namespace Monk_Task.Repositories
         {
             _context = context;
         }
-        //public IEnumerable<Cart> PopulatingData(GridReader result)
-        //{
-        // try
-        //{
-        //    var offeringsList = result.Read<Offering>().ToList();
-        //    var locationsList = result.Read<OfferingsLocation>().ToList();
-        //    var locationLookup = locationsList.GroupBy(x => x.OfferingsId).ToDictionary(g => g.Key, g => g.Select(x => new { x.OfferingsId, x.LocationId, x.Location }).ToList());
-
-        //    foreach (var item in offeringsList)
-        //    {
-        //        // locations data Bind
-        //        List<OfferingsLocation> offeringLocationsList = new List<OfferingsLocation>();
-        //        if (locationLookup.TryGetValue(item.Id, out var loc))
-        //        {
-        //            offeringLocationsList = loc.Select(x => new OfferingsLocation
-        //            {
-        //                OfferingsId = item.Id,
-        //                LocationId = x.LocationId,
-        //                Location = x.Location
-        //            }).ToList();
-        //        }
-        //        item.Location = offeringLocationsList;
-        //    }
-        //    return offeringsList;
-        //}
-        //catch (Exception ex)
-        //{
-        //    throw;
-        //}
-
-        //}
+       
         public async Task<IEnumerable<ApplicableCoupons>> ApplicableCoupons(List<Items> cartItems)
         {
             using var connection = _context.CreateConnection();
@@ -74,7 +42,6 @@ namespace Monk_Task.Repositories
             parameters.Add("@couponId", couponId);
             parameters.Add("@cartItems", cartDetailsTable.AsTableValuedParameter("dbo."));
 
-
             return await connection.QuerySingleOrDefaultAsync<Cart>(sql, parameters);
 
         }
@@ -83,51 +50,92 @@ namespace Monk_Task.Repositories
         {
             using var connection = _context.CreateConnection();
             var sql = @"
-                EXEC dbo.sp_CreateCoupons
-                    @type=@type,
-                    @expiresOn=@expiresOn,
-                    @productId=@productId,
-                    @threshold=@threshold,
-                    @discount=@discount,
-                    @repitionLimit=@repitionLimit,
-                    @buyProducts=@buyProducts,
-                    @getProducts=@getProducts
-";
+                 EXEC dbo.sp_CreateCoupons
+                 @type = @type,
+                 @expiresOn = @expiresOn,
+                 @productId = @productId,
+                 @threshold = @threshold,
+                 @discount = @discount,
+                 @repitionLimit = @repitionLimit,
+                 @buyProducts = @buyProducts,
+                 @getProducts = @getProducts,
+                 @result = @result OUTPUT;  -- Capture the output result
+                 ";
+
             var parameters = new DynamicParameters();
             parameters.Add("@type", discountcode.Type);
-            parameters.Add("@expiresOn", DateTime.UtcNow.AddDays(7));
+            parameters.Add("@expiresOn", DateTime.UtcNow.AddDays(7)); 
             parameters.Add("@productId", discountcode.Details.ProductId);
             parameters.Add("@threshold", discountcode.Details.Threshold);
             parameters.Add("@discount", discountcode.Details.Discount);
             parameters.Add("@repitionLimit", discountcode.Details.RepitionLimit);
+
             if (discountcode.Details.BuyProducts != null && discountcode.Details.BuyProducts.Any())
             {
-                DataTable buyProductsTable = Extensions.ConvertToTableSQL(discountcode.Details.BuyProducts);
+                DataTable buyProductsTable = new DataTable();
+                buyProductsTable.Columns.Add("ProductId", typeof(int));    
+                buyProductsTable.Columns.Add("Quantity", typeof(int));   
+                buyProductsTable.Columns.Add("Price", typeof(decimal));   
+                buyProductsTable.Columns.Add("TotalDiscount", typeof(decimal));  
+
+                foreach (var item in discountcode.Details.BuyProducts)
+                {
+                    buyProductsTable.Rows.Add(item.ProductId ?? 0, item.Quantity ?? 0, item.Price ?? 0, item.TotalDiscount ?? 0);
+                }
+
                 parameters.Add("@buyProducts", buyProductsTable.AsTableValuedParameter("dbo.type_BuyProducts"));
             }
             else
             {
-                parameters.Add("@buyProducts", null);
+                DataTable emptyBuyProductsTable = new DataTable();
+                emptyBuyProductsTable.Columns.Add("ProductId", typeof(int));   
+                emptyBuyProductsTable.Columns.Add("Quantity", typeof(int));     
+                emptyBuyProductsTable.Columns.Add("Price", typeof(decimal));   
+                emptyBuyProductsTable.Columns.Add("TotalDiscount", typeof(decimal));
+
+                parameters.Add("@buyProducts", emptyBuyProductsTable.AsTableValuedParameter("dbo.type_BuyProducts"));
             }
 
             if (discountcode.Details.GetProducts != null && discountcode.Details.GetProducts.Any())
             {
-                DataTable getProductsTable = Extensions.ConvertToTableSQL(discountcode.Details.GetProducts);
+                DataTable getProductsTable = new DataTable();
+                getProductsTable.Columns.Add("ProductId", typeof(int));   
+                getProductsTable.Columns.Add("Quantity", typeof(int));   
+                getProductsTable.Columns.Add("Price", typeof(decimal));
+                getProductsTable.Columns.Add("TotalDiscount", typeof(decimal));
+
+                foreach (var item in discountcode.Details.GetProducts)
+                {
+                    getProductsTable.Rows.Add(item.ProductId ?? 0, item.Quantity ?? 0, item.Price ?? 0, item.TotalDiscount ?? 0);
+                }
+
                 parameters.Add("@getProducts", getProductsTable.AsTableValuedParameter("dbo.type_GetProducts"));
             }
             else
             {
-                parameters.Add("@getProducts", null);
+                DataTable emptyGetProductsTable = new DataTable();
+                emptyGetProductsTable.Columns.Add("ProductId", typeof(int));    
+                emptyGetProductsTable.Columns.Add("Quantity", typeof(int));    
+                emptyGetProductsTable.Columns.Add("Price", typeof(decimal));  
+                emptyGetProductsTable.Columns.Add("TotalDiscount", typeof(decimal));  
+
+                parameters.Add("@getProducts", emptyGetProductsTable.AsTableValuedParameter("dbo.type_GetProducts"));
             }
+
             try
             {
-                return await connection.QuerySingleOrDefaultAsync<bool>(sql, parameters);
+                parameters.Add("@result", dbType: DbType.Int32, direction: ParameterDirection.Output);
+                await connection.ExecuteAsync(sql, parameters);
+                var result = parameters.Get<int>("@result");
+                return result == 1;  
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"An error occurred: {ex.Message}");
                 return false;
             }
         }
+
         public async Task<IEnumerable<Coupons>> GetAllCoupons()
         {
 
@@ -176,7 +184,6 @@ namespace Monk_Task.Repositories
             return coupon;
         }
 
-
         public async Task<bool> DeleteCoupon(int id)
         {
             using var connection = _context.CreateConnection();
@@ -184,26 +191,5 @@ namespace Monk_Task.Repositories
             return await connection.QuerySingleAsync<bool>(sql, new { id });
         }
 
-
-
-        //public Task<ResponseModel> UpdateCoupon(Coupons detail)
-        //{
-        //    using var connection = _context.CreateConnection();
-        //    var sql = @"
-        //        EXEC dbo.UpdateDiscountCodes 
-        //                @id = @id,
-        //                @orgainizationsid = @orgainizationsid,
-        //                @name = @name,
-        //                @discountcode = @discountcode,
-        //                @status = @status,
-        //                @startdate = @startdate,
-        //                @expirationdadte = @expirationdadte,
-        //                @appliestospecificofferings = @appliestospecificofferings,
-        //                @appliestospecifictype = @appliestospecifictype,
-        //                @amount = @amount,
-        //                @percentnumber = @percentnumber	
-        //    ";
-        //    return await connection.ExecuteAsync(sql, discountcode);
-        //}
     }
 }

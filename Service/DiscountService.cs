@@ -10,12 +10,10 @@ namespace Monk_Task.Service
     public interface IDiscountService
     {
         Task<ResponseModel> ApplicableCoupons(List<Items> cartItems);
-        Task<ResponseModel> ApplyCoupon(int couponId, List<Items> cartItems);
         Task<ResponseModel> Create(Coupons discountcode);
         Task<ResponseModel> DeleteCoupon(int id);
         Task<ResponseModel> GetAllCoupons();
         Task<ResponseModel> GetCouponById(int id);
-        //Task<ResponseModel> UpdateCoupon(Coupons detail);
     }
     public class DiscountService : IDiscountService
     {
@@ -39,7 +37,7 @@ namespace Monk_Task.Service
             catch (Exception ex)
             {
                 response.IsSuccess = false;
-                response.Message = ErrorLogType.Error.GetDescription(); //+ ex.Message;
+                response.Message = ex.Message; //+ ex.Message;
                 return response;
             }
         }
@@ -100,34 +98,6 @@ namespace Monk_Task.Service
             }
         }
 
-        public async Task<ResponseModel> ApplyCoupon(int couponId, List<Items> cartItems)
-        {
-            ResponseModel response = new ResponseModel();
-            try
-            {
-                Cart coupons = await _discountRepository.ApplyCoupon(couponId, cartItems);
-                if (coupons != null)
-                {
-                    response.IsSuccess = true;
-                    response.Data = coupons;
-                    return response;
-                }
-                response.IsSuccess = false;
-                response.Message = SuccessLogType.Invalid.GetDescription();
-                return response;
-            }
-            catch (Exception ex)
-            {
-                response.IsSuccess = false;
-                response.Message = ErrorLogType.Error.GetDescription(); //+ ex.Message;
-                return response;
-            }
-        }
-
-        //public async Task<ResponseModel> UpdateCoupon(Coupons detail)
-        //{
-        //    return await _discountRepository.UpdateCoupon(detail);
-        //}
         public async Task<ResponseModel> DeleteCoupon(int id)
         {
             ResponseModel response = new ResponseModel();

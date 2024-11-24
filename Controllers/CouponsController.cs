@@ -29,10 +29,10 @@ namespace Monk_Task.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new ResponseModel
+                return BadRequest(new ResponseModel
                 {
                     IsSuccess = false,
-                    Message = "An error occurred while creating the coupon"
+                    Message = ex.Message
                 });
             }
         }
@@ -74,13 +74,6 @@ namespace Monk_Task.Controllers
         }
 
 
-        //[HttpPut("coupons/{id}")]
-        // public async Task<IActionResult> UpdateCoupon(Coupons detail)
-        // {
-        // ResponseModel response = await _discountCodesService.UpdateCoupon(detail);
-        // return Ok(response);
-        //}
-
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCoupon(int id)
         {
@@ -96,16 +89,9 @@ namespace Monk_Task.Controllers
         }
 
         [HttpPost("/applicable-coupons")]
-        public async Task<IActionResult> ApplicableCoupons(List<Items> cartItems)
+        public async Task<IActionResult> ApplicableCoupons(IEnumerable<Items> cartItems)
         {
-            ResponseModel response = await _discountCodesService.ApplicableCoupons(cartItems);
-            return Ok(response);
-        }
-
-        [HttpPost("/apply-coupons/{couponId}")]
-        public async Task<IActionResult> ApplyCoupon(int couponId, List<Items> cartItems)
-        {
-            ResponseModel response = await _discountCodesService.ApplyCoupon(couponId, cartItems);
+            ResponseModel response = await _discountCodesService.ApplicableCoupons(cartItems.ToList());
             return Ok(response);
         }
 
