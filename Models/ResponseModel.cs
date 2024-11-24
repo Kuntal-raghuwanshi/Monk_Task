@@ -2,14 +2,8 @@
 {
     public class ResponseModel
     {
-        public bool IsSuccess { get; set; }
-        public string Message { get; set; }
-        public dynamic Data { get; set; }
-        public ResponseModel()
-        {
-            IsSuccess = false;
-            Message = "Warning";
-            Data = null;
-        }
+        public bool IsSuccess { get; set; } = true;
+        public string Message { get; set; } = string.Empty;
+        public object? Data { get; set; }
     }
 }

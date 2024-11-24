@@ -7,19 +7,19 @@ using static Monk_Task.Helpers.Extensions;
 namespace Monk_Task.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
-    public class DiscountController : Controller
+    [Route("coupons")]
+    public class CouponsController : Controller
     {
         private IDiscountService _discountCodesService;
         private IHttpContextAccessor _httpContext;
 
-        public DiscountController(IDiscountService discountCodesService, IHttpContextAccessor httpContext)
+        public CouponsController(IDiscountService discountCodesService, IHttpContextAccessor httpContext)
         {
             _discountCodesService = discountCodesService;
             _httpContext = httpContext;
         }
 
-        [HttpPost("/coupons")]
+        [HttpPost("")]
         public async Task<IActionResult> CreateCoupons(Coupons model)
         {
             try
@@ -37,7 +37,7 @@ namespace Monk_Task.Controllers
             }
         }
 
-        [HttpGet("/coupons")]
+        [HttpGet("")]
         public async Task<IActionResult> GetAllCoupons()
         {
             try
@@ -47,14 +47,15 @@ namespace Monk_Task.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new ResponseModel
+                return BadRequest(new ResponseModel
                 {
                     IsSuccess = false,
-                    Message = ErrorLogType.Error.GetDescription()
-                }) ;
+                    Message = ex.Message
+                });
             }
         }
-        [HttpGet("coupons/{id}")]
+
+        [HttpGet("{id}")]
         public async Task<IActionResult> GetCouponById(int id)
         {
             try
@@ -72,6 +73,28 @@ namespace Monk_Task.Controllers
             }
         }
 
+
+        //[HttpPut("coupons/{id}")]
+        // public async Task<IActionResult> UpdateCoupon(Coupons detail)
+        // {
+        // ResponseModel response = await _discountCodesService.UpdateCoupon(detail);
+        // return Ok(response);
+        //}
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteCoupon(int id)
+        {
+            try
+            {
+                ResponseModel response = await _discountCodesService.DeleteCoupon(id);
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { isSuccess = false, message = "Failed in Deleting" + ex.Message });
+            }
+        }
+
         [HttpPost("/applicable-coupons")]
         public async Task<IActionResult> ApplicableCoupons(List<Items> cartItems)
         {
@@ -86,25 +109,5 @@ namespace Monk_Task.Controllers
             return Ok(response);
         }
 
-        //[HttpPut("coupons/{id}")]
-       // public async Task<IActionResult> UpdateCoupon(Coupons detail)
-       // {
-           // ResponseModel response = await _discountCodesService.UpdateCoupon(detail);
-           // return Ok(response);
-        //}
-
-        [HttpDelete("coupons/{id}")]
-        public async Task<IActionResult> DeleteCoupon(int id)
-        {
-            try
-            {
-                ResponseModel response = await _discountCodesService.DeleteCoupon(id);
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { isSuccess = false, message = "Failed in Deleting" + ex.Message });
-            }
-        }
     }
 }

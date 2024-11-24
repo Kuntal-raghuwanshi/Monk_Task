@@ -19,8 +19,8 @@ namespace Monk_Task.Helpers
         //}
         public IDbConnection CreateConnection()
         {
-            var connectionString = $"Server={_dbSettings.Server};Database={_dbSettings.Database};User Id={_dbSettings.UserId};Password={_dbSettings.Password};TrustServerCertificate=True;";
-            return new SqlConnection(connectionString);
+            var connectionString1 = $"Data Source={_dbSettings.Server};Initial Catalog={_dbSettings.Database};Integrated Security=True; TrustServerCertificate=True";
+            return new SqlConnection(connectionString1);
         }
     }
 }

@@ -47,27 +47,10 @@ namespace Monk_Task.Service
         public async Task<ResponseModel> GetAllCoupons()
         {
             ResponseModel response = new ResponseModel();
-            try
-            {
-                IEnumerable<Coupons> allCoupons = await _discountRepository.GetAllCoupons();
-                if (allCoupons != null && allCoupons.Any())
-                {
-
-                    response.IsSuccess = true;
-                    response.Data = allCoupons;
-                    return response;
-
-                }
-                response.IsSuccess = false;
-                response.Message = SuccessLogType.NoData.GetDescription();
-                return response;
-            }
-            catch (Exception ex)
-            {
-                response.IsSuccess = false;
-                response.Message = ErrorLogType.Error.GetDescription(); //+ ex.Message;
-                return response;
-            }
+            var allCoupons = await _discountRepository.GetAllCoupons();
+            response.Message = !allCoupons.ToList().Any() ? SuccessLogType.NoData.GetDescription() : "";
+            response.Data = allCoupons;
+            return response;
         }
 
         public async Task<ResponseModel> GetCouponById(int id)

@@ -27,33 +27,33 @@ namespace Monk_Task.Repositories
         }
         //public IEnumerable<Cart> PopulatingData(GridReader result)
         //{
-            // try
-            //{
-            //    var offeringsList = result.Read<Offering>().ToList();
-            //    var locationsList = result.Read<OfferingsLocation>().ToList();
-            //    var locationLookup = locationsList.GroupBy(x => x.OfferingsId).ToDictionary(g => g.Key, g => g.Select(x => new { x.OfferingsId, x.LocationId, x.Location }).ToList());
+        // try
+        //{
+        //    var offeringsList = result.Read<Offering>().ToList();
+        //    var locationsList = result.Read<OfferingsLocation>().ToList();
+        //    var locationLookup = locationsList.GroupBy(x => x.OfferingsId).ToDictionary(g => g.Key, g => g.Select(x => new { x.OfferingsId, x.LocationId, x.Location }).ToList());
 
-            //    foreach (var item in offeringsList)
-            //    {
-            //        // locations data Bind
-            //        List<OfferingsLocation> offeringLocationsList = new List<OfferingsLocation>();
-            //        if (locationLookup.TryGetValue(item.Id, out var loc))
-            //        {
-            //            offeringLocationsList = loc.Select(x => new OfferingsLocation
-            //            {
-            //                OfferingsId = item.Id,
-            //                LocationId = x.LocationId,
-            //                Location = x.Location
-            //            }).ToList();
-            //        }
-            //        item.Location = offeringLocationsList;
-            //    }
-            //    return offeringsList;
-            //}
-            //catch (Exception ex)
-            //{
-            //    throw;
-            //}
+        //    foreach (var item in offeringsList)
+        //    {
+        //        // locations data Bind
+        //        List<OfferingsLocation> offeringLocationsList = new List<OfferingsLocation>();
+        //        if (locationLookup.TryGetValue(item.Id, out var loc))
+        //        {
+        //            offeringLocationsList = loc.Select(x => new OfferingsLocation
+        //            {
+        //                OfferingsId = item.Id,
+        //                LocationId = x.LocationId,
+        //                Location = x.Location
+        //            }).ToList();
+        //        }
+        //        item.Location = offeringLocationsList;
+        //    }
+        //    return offeringsList;
+        //}
+        //catch (Exception ex)
+        //{
+        //    throw;
+        //}
 
         //}
         public async Task<IEnumerable<ApplicableCoupons>> ApplicableCoupons(List<Items> cartItems)
@@ -83,16 +83,22 @@ namespace Monk_Task.Repositories
         {
             using var connection = _context.CreateConnection();
             var sql = @"
-                EXEC dbo.sp_CreateCupons
-                        
-                ";
+                EXEC dbo.sp_CreateCoupons
+                    @type=@type,
+                    @expiresOn=@expiresOn,
+                    @productId=@productId,
+                    @threshold=@threshold,
+                    @discount=@discount,
+                    @repitionLimit=@repitionLimit,
+                    @buyProducts=@buyProducts,
+                    @getProducts=@getProducts
+";
             var parameters = new DynamicParameters();
             parameters.Add("@type", discountcode.Type);
             parameters.Add("@expiresOn", DateTime.UtcNow.AddDays(7));
             parameters.Add("@productId", discountcode.Details.ProductId);
             parameters.Add("@threshold", discountcode.Details.Threshold);
             parameters.Add("@discount", discountcode.Details.Discount);
-
             parameters.Add("@repitionLimit", discountcode.Details.RepitionLimit);
             if (discountcode.Details.BuyProducts != null && discountcode.Details.BuyProducts.Any())
             {
@@ -113,7 +119,14 @@ namespace Monk_Task.Repositories
             {
                 parameters.Add("@getProducts", null);
             }
-            return await connection.QuerySingleOrDefaultAsync<bool>(sql, parameters);
+            try
+            {
+                return await connection.QuerySingleOrDefaultAsync<bool>(sql, parameters);
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
         }
         public async Task<IEnumerable<Coupons>> GetAllCoupons()
         {
@@ -121,8 +134,6 @@ namespace Monk_Task.Repositories
             using var connection = _context.CreateConnection();
             using GridReader multi = await connection.QueryMultipleAsync("dbo.sp_getAllCoupons", commandType: CommandType.StoredProcedure);
             List<Coupons> coupons = (await multi.ReadAsync<Coupons>()).ToList();
-            //var buyProducts = (await multi.ReadAsync<Items>()).ToList();
-            //var getProducts = (await multi.ReadAsync<Items>()).ToList();
             var buyProductsByCoupon = (await multi.ReadAsync<Items>()).ToList().GroupBy(bp => bp.CouponId).ToDictionary(g => g.Key, g => g.ToList());
             var getProductsByCoupon = (await multi.ReadAsync<Items>()).ToList().GroupBy(gp => gp.CouponId).ToDictionary(g => g.Key, g => g.ToList());
             foreach (var coupon in coupons)
@@ -150,10 +161,6 @@ namespace Monk_Task.Repositories
                 commandType: CommandType.StoredProcedure);
 
             Coupons coupon = await multi.ReadSingleOrDefaultAsync<Coupons>();
-            if (coupon == null)
-            {
-                return null;
-            }
             List<Items> buyProducts = (await multi.ReadAsync<Items>()).ToList();
             List<Items> getProducts = (await multi.ReadAsync<Items>()).ToList();
             coupon.Details = new CouponDetails

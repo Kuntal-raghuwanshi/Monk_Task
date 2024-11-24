@@ -5,7 +5,7 @@
         public int? Id { get; set; }
         public string Type { get; set; }
         public CouponDetails Details { get; set; }
-        public DateTime Expiry { get; set; }
+        public DateTime? Expiry { get; set; }
     }
     public class CouponDetails
     {
