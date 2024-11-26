@@ -5,6 +5,7 @@
 **2. GET /coupon (Retrieve all coupons)**
 This endpoint allows us to retrieve a list of all available coupons from the system. The coupon are returned based on whether the coupon is still valid(not expired) and active in the system
 .
+
 **3. GET /coupons/{id} (Retrieve a specific coupon by its ID)**
 This endpoint allows us to retrieve a single coupon's detail from the system.It is returned based on whether the coupon is still valid(not expired) and active in the system.
 
